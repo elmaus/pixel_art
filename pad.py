@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from PIL import Image
 import numpy as np
+import pickle
 
 
 # ListPad(root, content, args[padx, pady, width, anchor, bd]
@@ -83,14 +84,48 @@ class Pad(tk.Frame):
         self.CreatePixel()
 
 
+    def load(self, file):
+
+        ''' loading the saved file into the tab '''
+
+        for i in range(len(file)):
+            for j in range(len(file[0])):
+                item = self.pixels[i][j]
+                if file[i][j] == 'background':
+                    self.canvas.itemconfigure(item, fill='white', outline='dark grey')
+                else:
+                    self.canvas.itemconfigure(item, fill=file[i][j], outline=file[i][j])
+
+
+
+    def save(self, name):
+
+        ''' saving file to a text format '''
+
+        pixels = []
+        for i in range(self.pixels_in_col):
+            row = []
+            for j in range(self.pixels_in_row):
+                item = self.pixels[i][j]
+                if self.canvas.itemcget(item, 'outline') == 'dark grey':
+                    # checking if the fill is meant to be a background. indicated with outlined fill
+                    row.append('background')
+                else:
+                    row.append(self.canvas.itemcget(item, 'fill'))
+            pixels.append(row)
+
+        with open('{}.sc'.format(name), 'wb') as file:
+            pickle.dump(pixels, file)
+
+
     def export(self, name, ext):
 
         ''' exporting pixel value into image '''
 
         pixels = []
-        for i in range(self.pixels_in_row):
+        for i in range(self.pixels_in_col):
             row = []
-            for j in range(self.pixels_in_col):
+            for j in range(self.pixels_in_row):
                 item = self.pixels[i][j]
                 hex = self.canvas.itemcget(item, 'fill').lstrip('#')
                 if ext == 'png':
@@ -254,7 +289,7 @@ class DrawingPad(ttk.Notebook):
         self.maseter = args[0]
         selected_color = args[1]
         pen_size = args[2]
-        self.tab_dicionary = {}
+        self.tab_dictionary = {}
 
         if not self.__initialized:
             self.__initialize_custom_style()
@@ -352,7 +387,7 @@ class DrawingPad(ttk.Notebook):
     def add_welcome(self):
         pad = Welcome()
         self.add(pad, text='Welcome')
-        self.tab_dicionary['welcome'] = pad
+        self.tab_dictionary['welcome'] = pad
 
     def add_tab(self, name, w, h):
 
@@ -361,7 +396,7 @@ class DrawingPad(ttk.Notebook):
         pad = Pad(self, name='New', width=w, height=h)
         pad.pack(side='top')
         self.add(pad, text=name)
-        self.tab_dicionary[name] = pad
+        self.tab_dictionary[name] = pad
 
 
     def change_color(self, color):
@@ -389,7 +424,7 @@ class DrawingPad(ttk.Notebook):
         ''' zooming in the pad '''
 
         name = self.tab(self.active_tab)['text']
-        tab = self.tab_dicionary[name]
+        tab = self.tab_dictionary[name]
         tab.zoom(z)
 
 
@@ -398,7 +433,32 @@ class DrawingPad(ttk.Notebook):
         ''' exporting file into image '''
 
         name = self.tab(self.active_tab)['text']
-        tab = self.tab_dicionary[name]
+        tab = self.tab_dictionary[name]
         tab.export(name, ext)
 
 
+    def save(self):
+
+        ''' saving file '''
+
+        name = self.tab(self.active_tab)['text']
+        tab = self.tab_dictionary[name]
+        tab.save(name)
+
+
+    def load(self, file):
+
+        ''' loading file '''
+
+        with open(file, 'rb') as f:
+            data = pickle.load(f)
+
+        width = len(data)
+        height= len(data[0])
+        name = file.split('.')[0]
+
+        pad = Pad(self, name='New', width=width, height=height)
+        pad.pack(side='top')
+        self.add(pad, text=name)
+        self.tab_dictionary[name] = pad
+        pad.load(data)
