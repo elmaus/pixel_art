@@ -20,11 +20,13 @@ with open('pallet.pickle', 'rb') as file:
     pallet_dict = pickle.load(file)
 
 
-class ExportDialog(tk.Toplevel):
+class ExprtDialog(tk.Toplevel):
     def __init__(self, *args, **kwargs):
         tk.Toplevel.__init__(self)
 
         self.configure(padx=20, pady=20)
+
+        self.target = kwargs['target']
 
         self.lbl = tk.Label(self, text='Export to')
         self.lbl.grid(row=0, column=0, columnspan=2, pady=10)
@@ -35,10 +37,9 @@ class ExportDialog(tk.Toplevel):
         self.jpg = tk.Button(self, text='JPG', width=20, command=lambda:self.export('jpg'))
         self.jpg.grid(row=1, column=1)
 
-        self.parent = args[0]
 
     def export(self, ext):
-        self.parent.export(ext)
+        self.target.export(ext)
         self.destroy()
 
 
@@ -169,19 +170,23 @@ class App(tk.Tk):
         self.frame = tk.Frame(self, relief='raised', bd=2, width=600)
         self.frame.pack(side='top', fill='y', anchor='nw', pady=5, padx=10)
 
-        self.new_btn = tk.Button(self.frame, width=50, image=self.new_icon, text='New', command=lambda: NewDialog(self))
+        self.new_btn = tk.Button(self.frame, width=50, image=self.new_icon, text='New',
+                                 command=lambda: NewDialog(self))
         self.new_btn.grid(row=0, column=0, sticky='nw')
 
-        self.open_btn = tk.Button(self.frame, width=50, image=self.open_icon, text='Open', command=lambda:self.save())
+        self.open_btn = tk.Button(self.frame, width=50, image=self.open_icon, text='Open',
+                                  command=lambda:self.open())
         self.open_btn.grid(row=0, column=1, sticky='nw')
 
-        self.save_btn = tk.Button(self.frame, width=50, image=self.save_icon, text='Save')
+        self.save_btn = tk.Button(self.frame, width=50, image=self.save_icon, text='Save',
+                                  command=lambda:self.save())
         self.save_btn.grid(row=0, column=2, sticky='nw')
 
         self.save_as_btn = tk.Button(self.frame, width=50, image=self.save_as_icon, text='Save as')
         self.save_as_btn.grid(row=0, column=3, sticky='nw')
 
-        self.export_btn = tk.Button(self.frame, width=50, image=self.export_icon, text='Export',command=lambda:ExportDialog(self))
+        self.export_btn = tk.Button(self.frame, width=50, image=self.export_icon, text='Export',
+                                    command=lambda:self.export())
         self.export_btn.grid(row=0, column=4, sticky='nw')
 
         # frame for pallet
@@ -196,22 +201,27 @@ class App(tk.Tk):
         self.option.grid(row=0, column=0)
         self.option.configure(width=6)
 
-        self.brush_btn = tk.Button(self.frame2, width=50, relief='sunken', image=self.brush_icon, text='Brush', command=lambda:self.tool('brush', 0))
+        self.brush_btn = tk.Button(self.frame2, width=50, relief='sunken', image=self.brush_icon,
+                                   text='Brush', command=lambda:self.tool('brush', 0))
         self.brush_btn.grid(row=1, column=0)
         self._pen_tool.append(self.brush_btn)
 
-        self.paint_btn = tk.Button(self.frame2, width=50, image=self.paint_icon, text='Paint', command=lambda:self.tool('paint', 1))
+        self.paint_btn = tk.Button(self.frame2, width=50, image=self.paint_icon, text='Paint',
+                                   command=lambda:self.tool('paint', 1))
         self.paint_btn.grid(row=2, column=0)
         self._pen_tool.append(self.paint_btn)
 
-        self.erase_btn = tk.Button(self.frame2, width=50, image=self.eraser_icon, text='Erase', command=lambda:self.tool('erase', 2))
+        self.erase_btn = tk.Button(self.frame2, width=50, image=self.eraser_icon, text='Erase',
+                                   command=lambda:self.tool('erase', 2))
         self.erase_btn.grid(row=3, column=0)
         self._pen_tool.append(self.erase_btn)
 
-        self.zoom_in_btn = tk.Button(self.frame2, width=50, image=self.zoom_in_icon, text='Zoom +', command=lambda:self.zoom_in('+'))
+        self.zoom_in_btn = tk.Button(self.frame2, width=50, image=self.zoom_in_icon, text='Zoom +',
+                                     command=lambda:self.zoom_in('+'))
         self.zoom_in_btn.grid(row=4, column=0)
 
-        self.zoom_out_btn = tk.Button(self.frame2, width=50, image=self.zoom_out_icon, text='Zoom -', command=lambda:self.zoom_in('-'))
+        self.zoom_out_btn = tk.Button(self.frame2, width=50, image=self.zoom_out_icon, text='Zoom -',
+                                      command=lambda:self.zoom_in('-'))
         self.zoom_out_btn.grid(row=5, column=0)
 
         self.pad_ = pad.DrawingPad(self, selected_color, self.variable)
@@ -279,18 +289,36 @@ class App(tk.Tk):
 
 
     def tool(self, tool, index):
-        for p in self._pen_tool:
-            p.configure(relief='raised')
+        if self.pad_.active_tab > 0:
+            for p in self._pen_tool:
+                p.configure(relief='raised')
 
-        self.pad_.tool(tool)
+            self.pad_.tool(tool)
+            self._pen_tool[index].configure(relief='sunken')
+        else:
+            print('select tab')
 
-        self._pen_tool[index].configure(relief='sunken')
+    def export(self):
 
-    def export(self, ext):
-        self.pad_.export(ext)
+        if self.pad_.active_tab > 0:
+            new = ExprtDialog(target=self.pad_)
+        else:
+            print('select tab')
+
+
+    def save(self):
+        if self.pad_.active_tab > 0:
+            self.pad_.save()
+
+
+    def open(self):
+        self.pad_.load("textfile.sc")
 
     def zoom_in(self, z):
-        self.pad_.zoom_in(z)
+        if self.pad_.active_tab > 0:
+            self.pad_.zoom_in(z)
+        else:
+            print('select tab')
 
 
 
