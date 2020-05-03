@@ -1,6 +1,7 @@
 
 import tkinter as tk
 from tkinter import colorchooser
+from tkinter import filedialog
 import pickle
 
 import threading
@@ -20,7 +21,34 @@ with open('pallet.pickle', 'rb') as file:
     pallet_dict = pickle.load(file)
 
 
-class ExprtDialog(tk.Toplevel):
+
+class SaveAsDialog(tk.Toplevel):
+    def __init__(self, *args, **kwargs):
+        tk.Toplevel.__init__(self)
+        self.configure(padx=20, pady=20)
+        self.parent = args[0]
+
+
+        self.lbl = tk.Label(self, text='Name:')
+        self.lbl.grid(row=0, column=0)
+
+        self.name_ent = tk.Entry(self, width=10)
+        self.name_ent.grid(row=0, column=1, columnspan=2)
+
+        self.ok_btn = tk.Button(self, width=6, text='OK', command=lambda:self.save_as())
+        self.ok_btn.grid(row=1, column=1, padx=10)
+
+        self.cancel_btn = tk.Button(self, width=6, text='CANCEL')
+        self.cancel_btn.grid(row=1, column=2, padx=10)
+
+    def save_as(self):
+        self.parent.save(self.name_ent.get())
+
+    def cancel(self):
+        self.destroy()
+
+
+class ExportDialog(tk.Toplevel):
     def __init__(self, *args, **kwargs):
         tk.Toplevel.__init__(self)
 
@@ -182,7 +210,8 @@ class App(tk.Tk):
                                   command=lambda:self.save())
         self.save_btn.grid(row=0, column=2, sticky='nw')
 
-        self.save_as_btn = tk.Button(self.frame, width=50, image=self.save_as_icon, text='Save as')
+        self.save_as_btn = tk.Button(self.frame, width=50, image=self.save_as_icon, text='Save as',
+                                     command=lambda:self.save_as())
         self.save_as_btn.grid(row=0, column=3, sticky='nw')
 
         self.export_btn = tk.Button(self.frame, width=50, image=self.export_icon, text='Export',
@@ -298,21 +327,35 @@ class App(tk.Tk):
         else:
             print('select tab')
 
-    def export(self):
 
+    def export(self):
         if self.pad_.active_tab > 0:
-            new = ExprtDialog(target=self.pad_)
-        else:
-            print('select tab')
+            new = ExportDialog(target=self.pad_)
+
+
+    def save_as(self):
+        if self.pad_.active_tab > 0:
+            new = SaveAsDialog(self.pad_)
 
 
     def save(self):
         if self.pad_.active_tab > 0:
-            self.pad_.save()
+            self.pad_.save('')
 
 
     def open(self):
-        self.pad_.load("textfile.sc")
+        file = filedialog.askopenfilename(initialdir="/", title="Select file",
+                                   filetypes=(("jpeg files", "*.jpg"), ("png files", "*.jpg"), ('sc files', '*.sc')))
+        print(file)
+
+        with open(file, 'rb') as f:
+            data = pickle.load(f)
+
+        width = len(data)
+        height = len(data[0])
+        name = file.split('/')[-1].split('.')[0]
+
+        self.pad_.load(name, data, width, height)
 
     def zoom_in(self, z):
         if self.pad_.active_tab > 0:
