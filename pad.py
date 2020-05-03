@@ -84,12 +84,12 @@ class Pad(tk.Frame):
         self.CreatePixel()
 
 
-    def load(self, file):
+    def load(self, file, width, height):
 
         ''' loading the saved file into the tab '''
 
-        for i in range(len(file)):
-            for j in range(len(file[0])):
+        for i in range(width):
+            for j in range(height):
                 item = self.pixels[i][j]
                 if file[i][j] == 'background':
                     self.canvas.itemconfigure(item, fill='white', outline='dark grey')
@@ -108,7 +108,7 @@ class Pad(tk.Frame):
             for j in range(self.pixels_in_row):
                 item = self.pixels[i][j]
                 if self.canvas.itemcget(item, 'outline') == 'dark grey':
-                    # checking if the fill is meant to be a background. indicated with outlined fill
+                    # checking if the fill is meant to be a background. indicated with outlined pixel
                     row.append('background')
                 else:
                     row.append(self.canvas.itemcget(item, 'fill'))
@@ -437,28 +437,23 @@ class DrawingPad(ttk.Notebook):
         tab.export(name, ext)
 
 
-    def save(self):
+    def save(self, save):
 
         ''' saving file '''
 
         name = self.tab(self.active_tab)['text']
         tab = self.tab_dictionary[name]
-        tab.save(name)
+        if save == '':
+            tab.save(name)
+        else:
+            tab.save(save)
 
-
-    def load(self, file):
+    def load(self, name, data, width, height):
 
         ''' loading file '''
-
-        with open(file, 'rb') as f:
-            data = pickle.load(f)
-
-        width = len(data)
-        height= len(data[0])
-        name = file.split('.')[0]
 
         pad = Pad(self, name='New', width=width, height=height)
         pad.pack(side='top')
         self.add(pad, text=name)
         self.tab_dictionary[name] = pad
-        pad.load(data)
+        pad.load(data, width, height)
